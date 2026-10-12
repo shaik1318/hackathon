@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NSA Border Surveillance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper:#E8EDEF; --sheet:#F6F8F9; --ink:#12293A; --ink2:#4A6272; --rule:#C5D2D8;
+    --survey:#1F5F7A; --survey-d:#174A5F; --flare:#E5481C; --field:#2B7A57; --focus:#0A84FF;
+  }
+  [hidden] { display:none !important; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; }
+  body {
+    font-family:"Archivo", system-ui, "Segoe UI", Arial, sans-serif;
+    font-size:15px; line-height:1.45; color:var(--ink); background:var(--paper);
+  }
+  :focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+  h2 { font-size:17px; margin:0 0 12px; font-weight:700; font-stretch:90%; }
+
+  .top {
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    padding:12px 24px; background:var(--sheet); border-bottom:1px solid var(--rule);
+  }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .brand b { display:block; font-size:19px; font-weight:700; font-stretch:85%; }
+  .brand span { color:var(--ink2); font-size:13px; }
+  .nav { display:flex; gap:4px; flex-wrap:wrap; }
+  .nav a { padding:7px 14px; border-radius:6px; color:var(--ink2); text-decoration:none; font-weight:600; font-size:14px; }
+  .nav a:hover { background:var(--paper); color:var(--ink); }
+  .nav a[aria-current="page"] { background:var(--ink); color:#fff; }
+  .top-r { display:flex; align-items:center; gap:16px; }
+  .pill {
+    display:inline-flex; align-items:center; gap:8px; padding:5px 12px;
+    border:1px solid var(--rule); border-radius:999px; background:#fff; font-weight:600; font-size:13px;
+  }
+  .dot { width:9px; height:9px; border-radius:50%; background:#98A9B3; }
+  .pill[data-kind="run"] .dot { background:var(--field); animation:pulse 1.6s ease-in-out infinite; }
+  .pill[data-kind="err"] .dot { background:var(--flare); }
+  @keyframes pulse { 50% { opacity:.3; } }
+  #clock { font-variant-numeric:tabular-nums; color:var(--ink2); font-weight:600; }
+
+  .btn {
+    padding:8px 13px; border:1px solid var(--ink2); border-radius:6px; background:transparent;
+    color:var(--ink); font:inherit; font-size:14px; font-weight:600; cursor:pointer;
+    text-decoration:none; display:inline-block;
+  }
+  .btn:hover:not(:disabled) { background:var(--paper); }
+  .btn[aria-pressed="true"] { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .btn.primary { background:var(--survey); border-color:var(--survey); color:#fff; }
+  .btn.primary:hover:not(:disabled) { background:var(--survey-d); }
+  .btn.danger { background:var(--flare); border-color:var(--flare); color:#fff; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; align-items:center; }
+  .msg { margin-top:12px; font-size:13.5px; min-height:20px; color:var(--ink2); }
+  .msg.err { color:#B3320F; font-weight:600; }
+  .hint { color:var(--ink2); font-size:13px; }
+  .banner {
+    background:#fff; border:1px solid var(--rule); border-left:4px solid var(--field);
+    padding:10px 14px; border-radius:6px; margin-bottom:16px;
+  }
+  .banner.err { border-left-color:var(--flare); }
+  .banner a { color:var(--survey-d); font-weight:600; }
+  input[type="text"] {
+    width:100%; padding:9px 10px; border:1px solid var(--rule); border-radius:6px;
+    background:#fff; color:var(--ink); font:inherit;
+  }
+  label.field { display:block; font-size:13px; color:var(--ink2); margin-bottom:5px; }
+  #camVideo { position:fixed; left:0; bottom:0; width:2px; height:2px; opacity:.01; pointer-events:none; }
+
+  .srvBox { margin-top:12px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:10px; }
+  #srvStatus { font-size:13px; color:var(--ink2); font-weight:600; margin-top:6px; }
+  #srvStatus[data-kind="ok"] { color:var(--field); }
+  #srvStatus[data-kind="err"] { color:#B3320F; }
+
+  .camBox { margin-top:12px; background:#fff; border:1px solid var(--rule); border-radius:6px; padding:10px; }
+  .camHead { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  #camStatus { font-size:13px; color:var(--ink2); font-weight:600; }
+  #camStatus[data-kind="ok"] { color:var(--field); }
+  #camStatus[data-kind="err"] { color:#B3320F; }
+  #camStatus[data-kind="wait"] { color:var(--survey-d); }
+  #camDiag { margin:8px 0 0; font-size:12.5px; color:var(--ink2); line-height:1.4; word-break:break-word; }
+  #camDiag:empty { display:none; }
+  #camPreview { display:none; width:100%; margin-top:8px; border-radius:4px; background:#0C1A22; }
+  #camPreview.on { display:block; }
+
+  .stage { position:relative; background:#0C1A22; border-radius:4px; overflow:hidden; min-height:320px; }
+  .stage img { display:block; width:100%; height:auto; }
+  .stage canvas { position:absolute; left:0; top:0; width:100%; height:100%; cursor:crosshair; }
+  .stage .empty {
+    position:absolute; inset:0; display:grid; place-items:center; text-align:center;
+    padding:24px; color:#9DB6C2; line-height:1.6;
+  }
+  .stage .empty a { color:#fff; }
+  #devView { position:relative; line-height:0; background:#0C1A22; min-height:240px; }
+  #liveDisp { display:block; width:100%; height:auto; }
+
+  .setup-app { display:grid; grid-template-columns:330px minmax(0,1fr); min-height:calc(100vh - 66px); }
+  .setup { background:var(--sheet); border-right:1px solid var(--rule); padding:22px; }
+  .step { display:grid; grid-template-columns:28px 1fr; gap:12px; padding-bottom:24px; position:relative; }
+  .step::before {
+    content:""; position:absolute; left:13.5px; top:32px; bottom:4px; width:1px; background:var(--rule);
+  }
+  .step:last-child { padding-bottom:6px; }
+  .step:last-child::before { display:none; }
+  .num {
+    width:28px; height:28px; border-radius:50%; border:1.5px solid var(--ink);
+    display:grid; place-items:center; font-weight:700; font-size:13px; background:var(--sheet);
+  }
+  .step h2 { font-size:17px; margin:2px 0 8px; }
+  .step p { margin:0 0 10px; color:var(--ink2); font-size:13.5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chips label {
+    position:relative; display:inline-flex; align-items:center; padding:5px 11px;
+    border:1px solid var(--rule); border-radius:999px; background:#fff; cursor:pointer; font-size:14px;
+  }
+  .chips input { position:absolute; opacity:0; pointer-events:none; }
+  .chips label:has(input:checked) { background:var(--ink); border-color:var(--ink); color:#fff; }
+  .actions { display:flex; gap:8px; margin-top:6px; }
+  .actions .btn { flex:1; padding:11px 14px; font-size:15px; }
+  .center { padding:22px 24px; min-width:0; }
+  .plate { display:grid; grid-template-columns:26px minmax(0,1fr); grid-template-rows:22px auto; }
+  .plate canvas.ruler { display:block; }
+  .readouts {
+    display:flex; justify-content:space-between; gap:16px; margin:10px 0 0 26px;
+    color:var(--ink2); font-size:13px; font-variant-numeric:tabular-nums; flex-wrap:wrap;
+  }
+
+  .live-app { display:grid; grid-template-columns:minmax(0,1fr) 340px; min-height:calc(100vh - 66px); }
+  .live-main { padding:22px 24px; min-width:0; }
+  .side { background:var(--sheet); border-left:1px solid var(--rule); padding:22px; min-width:0; }
+  .kpi { display:flex; align-items:baseline; gap:12px; margin-bottom:22px; }
+  .big { font-size:76px; line-height:1; font-weight:800; font-stretch:75%; font-variant-numeric:tabular-nums; }
+  .kpi-label { color:var(--ink2); font-size:14px; max-width:130px; line-height:1.3; }
+  .events { list-style:none; margin:0; padding:0 0 0 14px; border-left:2px solid var(--rule); }
+  .events li { position:relative; padding:10px 0 10px 18px; }
+  .events li::before {
+    content:""; position:absolute; left:-8px; top:18px; width:10px; height:10px;
+    border-radius:50%; background:var(--flare); border:2px solid var(--sheet);
+  }
+  .events li.none { color:var(--ink2); font-size:14px; }
+  .events li.none::before { display:none; }
+  .events b { display:block; font-size:15px; }
+  .events span { display:block; color:var(--ink2); font-size:13px; font-variant-numeric:tabular-nums; }
+
+  .log-wrap { padding:22px 24px; max-width:1100px; margin:0 auto; }
+  .log-head {
+    display:flex; justify-content:space-between; align-items:flex-end; gap:16px;
+    flex-wrap:wrap; margin-bottom:16px;
+  }
+  .log-head h2 { margin-bottom:4px; }
+  .tbl {
+    width:100%; border-collapse:collapse; background:#fff;
+    border:1px solid var(--rule); border-radius:6px; overflow:hidden;
+  }
+  .tbl th, .tbl td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--rule); vertical-align:middle; }
+  .tbl th { font-size:13px; color:var(--ink2); font-weight:600; background:var(--sheet); }
+  .tbl td.pic img {
+    display:block; width:132px; height:82px; object-fit:cover; border-radius:4px; border:1px solid var(--rule);
+  }
+
+  @media (max-width:1100px) {
+    .setup-app, .live-app { grid-template-columns:1fr; }
+    .setup { border-right:0; border-bottom:1px solid var(--rule); }
+    .side { border-left:0; border-top:1px solid var(--rule); }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+      <path d="M3 10V3h7M20 3h7v7M27 20v7h-7M10 27H3v-7" stroke="#12293A" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M6 21L24 9" stroke="#E5481C" stroke-width="2.6" stroke-linecap="round"/>
+    </svg>
+    <div><b>Border Surveillance</b><span>Video analytics on existing CCTV</span></div>
+  </div>
+  <nav class="nav">
+    <a href="#setup" aria-current="page">Setup</a>
+    <a href="#live">Live view</a>
+    <a href="#log">Crossing log</a>
+    <a href="#" id="galleryLink">Photo gallery</a>
+  </nav>
+  <div class="top-r">
+    <span class="pill" id="pill" data-kind="idle"><i class="dot"></i><span id="pillText">Idle</span></span>
+    <time id="clock"></time>
+  </div>
+</header>
+
+<section id="tab-setup" class="setup-app">
+  <aside class="setup">
+
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h2>Connect and choose a source</h2>
+
+        <div class="srvBox">
+          <label class="field" for="srvInput">Server address (where survilience.py runs)</label>
+          <input type="text" id="srvInput" placeholder="http://127.0.0.1:5000">
+          <div class="row">
+            <button class="btn" id="btnSrvSave">Save and test</button>
+          </div>
+          <div id="srvStatus" data-kind="">Not connected yet</div>
+        </div>
+
+        <label class="field" for="src" style="margin-top:14px;">Camera address, video file path, or "device" for this device's camera</label>
+        <input type="text" id="src" placeholder="rtsp://user:pass@192.168.1.10:554/stream1">
+        <div class="row">
+          <button class="btn" id="btnFile">Upload video</button>
+        </div>
+        <p class="hint" style="margin:10px 0 0;">This device's camera:</p>
+        <div class="row">
+          <button class="btn" id="btnBack" aria-pressed="true">Back camera</button>
+          <button class="btn" id="btnFront" aria-pressed="false">Front camera</button>
+        </div>
+
+        <div class="camBox">
+          <div class="camHead">
+            <span id="camStatus" data-kind="">Camera is off</span>
+            <div class="row" style="margin:0;">
+              <button class="btn primary" id="btnAllow">Allow camera</button>
+              <button class="btn" id="btnCamOff" hidden>Turn off</button>
+            </div>
+          </div>
+          <p id="camDiag"></p>
+          <video id="camPreview" playsinline muted autoplay></video>
+        </div>
+
+        <input type="file" id="file" accept="video/*" hidden>
+        <div class="row"><button class="btn primary" id="btnLoad">Load preview</button></div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h2>Draw the border</h2>
+        <p>Click two points to draw the border line. For a restricted zone, switch to zone mode, click its corners in order (3 to 30), then press Finish zone. Draw on fixed things such as a wall, fence or road edge.</p>
+        <div class="row">
+          <button class="btn" id="btnLineMode" aria-pressed="true">Border line (2 clicks)</button>
+          <button class="btn" id="btnZoneMode" aria-pressed="false">Restricted zone (3+ clicks)</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnFinishZone">Finish zone</button>
+          <button class="btn" id="btnClear">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div>
+        <h2>Pick what to detect</h2>
+        <div class="chips" id="classes">
+          <label><input type="checkbox" value="person" checked>Person</label>
+          <label><input type="checkbox" value="car" checked>Car</label>
+          <label><input type="checkbox" value="motorcycle" checked>Motorcycle</label>
+          <label><input type="checkbox" value="bus" checked>Bus</label>
+          <label><input type="checkbox" value="truck" checked>Truck</label>
+          <label><input type="checkbox" value="animal" checked>Animals</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="btnStart">Start detection</button>
+    </div>
+    <div class="msg" id="msg" aria-live="polite"></div>
+  </aside>
+
+  <main class="center">
+    <h2>Camera view</h2>
+    <div class="plate">
+      <span></span>
+      <canvas class="ruler" id="rulerTop"></canvas>
+      <canvas class="ruler" id="rulerLeft"></canvas>
+      <div class="stage" id="stage">
+        <img id="view" alt="Camera view" hidden>
+        <canvas id="overlay" hidden></canvas>
+        <div class="empty" id="setupEmpty"><p>No picture yet.<br>Save the server address, allow the camera, then press Load preview.</p></div>
+      </div>
+    </div>
+    <div class="readouts">
+      <span id="cursorRead">Cursor off the picture</span>
+      <span id="lineRead">Border not set</span>
+    </div>
+  </main>
+</section>
+
+<section id="tab-live" class="live-app" hidden>
+  <main class="live-main">
+    <div class="banner err" id="notice" hidden></div>
+    <div class="stage">
+      <img id="feed" alt="Live camera view" hidden>
+      <div id="devView" hidden>
+        <canvas id="liveDisp"></canvas>
+      </div>
+      <div class="empty" id="liveEmpty">
+        <p>No detection is running.<br><a href="#setup">Go to setup</a> to choose a source and start.</p>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn danger" id="btnStop" disabled>Stop detection</button>
+      <button class="btn" id="btnCam" hidden>Turn on this device's camera</button>
+      <button class="btn" id="btnChange" hidden>Change camera (stops detection)</button>
+    </div>
+    <p class="hint" id="overlayInfo"></p>
+    <p class="hint" id="camInfo"></p>
+  </main>
+
+  <aside class="side">
+    <div class="kpi"><span class="big" id="cross">0</span><span class="kpi-label">crossings this run</span></div>
+    <h2>Latest crossings</h2>
+    <ul class="events" id="events">
+      <li class="none">No crossings yet.</li>
+    </ul>
+    <p class="hint"><a href="#log">Open the full crossing log</a></p>
+  </aside>
+</section>
+
+<section id="tab-log" class="log-wrap" hidden>
+  <div class="log-head">
+    <div>
+      <h2>Crossing log</h2>
+      <p class="hint" id="logCount">Loading...</p>
+    </div>
+    <div class="row">
+      <button class="btn" id="btnRefresh">Refresh</button>
+      <a class="btn primary" id="csvLink" href="#">Download CSV</a>
+    </div>
+  </div>
+  <table class="tbl">
+    <thead><tr><th>Picture</th><th>Who</th><th>Time</th><th>Direction</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</section>
+
+<video id="camVideo" playsinline muted autoplay></video>
+
+<script>
+/* ============ SERVER ADDRESS ============ */
+const DEFAULT_SERVER = "http://127.0.0.1:5000";
+const srv = () => (localStorage.getItem("srvAddress") || DEFAULT_SERVER).replace(/\/+$/, "");
+const srvUrl = (path) => srv() + path;
+
+/* ============ HELPERS ============ */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const pct = (v) => Math.round(v * 100);
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const TABS = ["setup", "live", "log"];
+
+/* Colour of the border line (must match LINE_COLOR in survilience.py). */
+const LINE_COLOR = "#00E5FF";
+const LINE_SHADOW = "rgba(18,41,58,.55)";
+
+const stage = $("stage"), view = $("view"), overlay = $("overlay"), ctx = overlay.getContext("2d");
+const rTop = $("rulerTop"), rLeft = $("rulerLeft"), camVideo = $("camVideo"), camPreview = $("camPreview"), feed = $("feed");
+
+/* ============ STATE ============ */
+let current = "setup";
+let pts = [], cursor = null;
+let zone = [], zoneDone = false, mode = "line";
+let camStream = null, facing = "environment";
+let running = false, wasRunning = false, liveMode = "none", lastSig = "", lastError = "";
+let serverOk = false;
+
+let liveOv = null;
+let lastT = null;
+let lastOvChange = 0;
+let frameSeq = 0;
+const FRAME_BUF = [];
+const FRAME_KEEP = 40;
+
+/* ============ SERVER COMMUNICATION ============ */
+function setSrvStatus(text, kind) {
+  $("srvStatus").textContent = text;
+  $("srvStatus").dataset.kind = kind || "";
+}
+
+async function api(path, body) {
+  try {
+    const res = await fetch(srvUrl(path), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    });
+    let data = {};
+    try { data = await res.json(); }
+    catch (e) { data = { error: "Server error (" + res.status + "). Check the terminal running survilience.py." }; }
+    return { ok: res.ok, data };
+  } catch (e) {
+    return { ok: false, data: { error: "Cannot reach the server at " + srv() + ". Check the server address above, and that survilience.py is running." } };
+  }
+}
+
+async function getStatus() {
+  return (await fetch(srvUrl("/api/status"))).json();
+}
+
+/* Saves the server address and checks it. */
+async function testServer() {
+  const typed = $("srvInput").value.trim().replace(/\/+$/, "");
+  if (typed) localStorage.setItem("srvAddress", typed);
+  $("srvInput").value = srv();
+  setSrvStatus("Checking " + srv() + " ...", "");
+  try {
+    const res = await fetch(srvUrl("/api/ping"));
+    const d = await res.json();
+    serverOk = !!d.ok;
+    setSrvStatus(serverOk ? "Connected to " + srv() : "Server answered but not as expected", serverOk ? "ok" : "err");
+  } catch (e) {
+    serverOk = false;
+    let hint = "Cannot reach " + srv() + ". Check that survilience.py is running.";
+    if (srv().startsWith("https://")) hint += " For an https address, open it once in this browser and tap Advanced, then Proceed.";
+    setSrvStatus(hint, "err");
+  }
+  $("galleryLink").href = srvUrl("/gallery");
+  $("csvLink").href = srvUrl("/api/log.csv");
+}
+
+$("btnSrvSave").onclick = testServer;
+
+function setPill(text, kind) {
+  $("pillText").textContent = text;
+  $("pill").dataset.kind = kind;
+}
+
+function setMsg(text, isErr) {
+  const m = $("msg");
+  m.textContent = text || "";
+  m.className = "msg" + (isErr ? " err" : "");
+}
+
+/* ============ CLOCK ============ */
+function tick() { $("clock").textContent = new Date().toLocaleTimeString([], { hour12: false }); }
+tick();
+setInterval(tick, 1000);
+
+/* ============ TABS ============ */
+function showTab(name) {
+  if (!TABS.includes(name)) name = "setup";
+  current = name;
+  TABS.forEach(t => {
+    $("tab-" + t).hidden = t !== name;
+    document.querySelector(`.nav a[href="#${t}"]`).setAttribute("aria-current", t === name ? "page" : "false");
+  });
+  if (name === "setup") sizeAll();
+  if (name === "log") loadLog();
+  if (name === "live") pollEvents();
+}
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
+
+/* ============ RULERS, BORDER AND ZONE DRAWING ============ */
+function drawRuler(canvas, length, vertical) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = vertical ? 26 : length, H = vertical ? length : 22;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + "px"; canvas.style.height = H + "px";
+  const c = canvas.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  c.strokeStyle = "#4A6272"; c.fillStyle = "#4A6272"; c.lineWidth = 1;
+  c.font = "10px Archivo, Arial, sans-serif";
+  for (let i = 0; i <= 100; i += 5) {
+    const major = i % 10 === 0;
+    const p = Math.min(Math.round(length * i / 100) + 0.5, length - 0.5);
+    const len = major ? 8 : 4;
+    c.beginPath();
+    if (vertical) { c.moveTo(W, p); c.lineTo(W - len, p); }
+    else { c.moveTo(p, H); c.lineTo(p, H - len); }
+    c.stroke();
+    if (i % 20 === 0) {
+      if (vertical) {
+        c.textAlign = "right";
+        c.textBaseline = i === 0 ? "top" : i === 100 ? "bottom" : "middle";
+        c.fillText(String(i), W - 11, p);
+      } else {
+        c.textBaseline = "top";
+        c.textAlign = i === 0 ? "left" : i === 100 ? "right" : "center";
+        c.fillText(String(i), p, 1);
+      }
+    }
+  }
+}
+
+function updateReadouts() {
+  $("cursorRead").textContent = cursor
+    ? "Cursor " + pct(cursor[0]) + "%, " + pct(cursor[1]) + "%"
+    : "Cursor off the picture";
+
+  let lineText = pts.length === 2
+    ? "Border line set"
+    : pts.length === 1 ? "Border: click the second point" : "Border not set";
+
+  if (zone.length) {
+    lineText += "    Zone: " + zone.length + " corner" + (zone.length === 1 ? "" : "s") +
+                (zoneDone ? "" : " (not finished)");
+  }
+  $("lineRead").textContent = lineText;
+}
+
+function strokeLine(g, x1, y1, x2, y2, width) {
+  g.lineCap = "round";
+  g.strokeStyle = LINE_SHADOW; g.lineWidth = width + 2;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  g.strokeStyle = LINE_COLOR; g.lineWidth = width;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+}
+
+function drawOverlay() {
+  const w = overlay.width, h = overlay.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (cursor && !running) {
+    ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(cursor[0] * w, 0); ctx.lineTo(cursor[0] * w, h);
+    ctx.moveTo(0, cursor[1] * h); ctx.lineTo(w, cursor[1] * h);
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  const z = zone.map(([x, y]) => [x * w, y * h]);
+  if (z.length >= 2) {
+    ctx.beginPath();
+    z.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    if (zoneDone && z.length >= 3) {
+      ctx.closePath();
+      ctx.fillStyle = "rgba(229,72,28,.2)"; ctx.fill();
+    }
+    ctx.strokeStyle = "#E5481C"; ctx.lineWidth = 2; ctx.stroke();
+  }
+  z.forEach(([x, y]) => {
+    ctx.fillStyle = "#E5481C";
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
+  });
+
+  const p = pts.map(([x, y]) => [x * w, y * h]);
+  if (p.length === 2) {
+    strokeLine(ctx, p[0][0], p[0][1], p[1][0], p[1][1], 3);
+  } else {
+    p.forEach(([x, y]) => {
+      ctx.fillStyle = LINE_COLOR;
+      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+    });
+  }
+}
+
+function sizeAll() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  overlay.width = w; overlay.height = h;
+  drawRuler(rTop, w, false);
+  drawRuler(rLeft, h, true);
+  drawOverlay();
+}
+new ResizeObserver(() => { if (current === "setup") sizeAll(); }).observe(stage);
+view.onload = sizeAll;
+view.onerror = () => setMsg("The preview picture could not be loaded. Check the server address, then load the preview again.", true);
+
+overlay.onmousemove = (e) => {
+  const r = overlay.getBoundingClientRect();
+  cursor = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+  drawOverlay(); updateReadouts();
+};
+overlay.onmouseleave = () => { cursor = null; drawOverlay(); updateReadouts(); };
+
+overlay.onclick = (e) => {
+  if (running) return;
+  const r = overlay.getBoundingClientRect();
+  const p = [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height];
+
+  if (mode === "zone") {
+    if (zoneDone) { zone = []; zoneDone = false; }
+    zone.push(p);
+    setMsg("Corner " + zone.length + ". Add more corners, then press Finish zone.");
+  } else {
+    if (pts.length >= 2) pts = [];
+    pts.push(p);
+    if (pts.length === 2) setMsg("Border line set. Choose Start detection.");
+  }
+  drawOverlay(); updateReadouts();
+};
+
+function setMode(m) {
+  mode = m;
+  $("btnLineMode").setAttribute("aria-pressed", m === "line");
+  $("btnZoneMode").setAttribute("aria-pressed", m === "zone");
+  setMsg(m === "zone"
+    ? "Click the corners of the restricted zone in order, then press Finish zone."
+    : "Click two points to draw the border line on the picture.");
+}
+$("btnLineMode").onclick = () => setMode("line");
+$("btnZoneMode").onclick = () => setMode("zone");
+
+function finishZone() {
+  if (zone.length < 3) return setMsg("A zone needs at least 3 corners. You have " + zone.length + ".", true);
+  if (zone.length > 30) return setMsg("A zone can have at most 30 corners.", true);
+  zoneDone = true;
+  drawOverlay(); updateReadouts();
+  setMsg("Zone set with " + zone.length + " corners. Choose Start detection.");
+}
+$("btnFinishZone").onclick = finishZone;
+
+$("btnClear").onclick = () => {
+  pts = []; zone = []; zoneDone = false;
+  drawOverlay(); updateReadouts(); setMsg("");
+};
+
+/* ============ DEVICE CAMERA ============ */
+function setFacing(f) {
+  facing = f;
+  $("btnBack").setAttribute("aria-pressed", String(f === "environment"));
+  $("btnFront").setAttribute("aria-pressed", String(f === "user"));
+}
+
+function setCamStatus(text, kind) {
+  $("camStatus").textContent = text;
+  $("camStatus").dataset.kind = kind || "";
+}
+
+function camDiagnostics() {
+  const secure = window.isSecureContext ? "secure" : "NOT secure";
+  const hasApi = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  return "Address: " + location.protocol + "//" + location.host + " (" + secure + ")" +
+         "  |  camera API: " + (hasApi ? "available" : "not available");
+}
+
+const CAM_ERRORS = {
+  NotAllowedError: "Camera permission was refused. Press Allow camera again and tap Allow on the browser prompt. If no prompt appears, open the padlock next to the address, set Camera to Allow, then reload the page.",
+  PermissionDeniedError: "Camera permission was refused. Set Camera to Allow for this site, reload the page, then press Allow camera.",
+  SecurityError: "This address is not secure, so the browser will not open the camera. Open the page from its https:// address.",
+  NotFoundError: "No camera was found on this device.",
+  DevicesNotFoundError: "No camera was found on this device.",
+  NotReadableError: "The camera is busy. Close other apps or browser tabs that use the camera, then press Allow camera again.",
+  TrackStartError: "The camera is busy. Close other apps or browser tabs that use the camera, then press Allow camera again.",
+  OverconstrainedError: "This device does not have that camera. Choose the other camera.",
+  AbortError: "The camera could not start. Close other camera apps and press Allow camera again.",
+  TimeoutError: "The browser did not show the camera prompt. Close bubbles or floating apps, allow Camera for Chrome in Android settings (Settings → Apps → Chrome → Permissions), then press Allow camera again."
+};
+
+function cameraProblem(e) {
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    return "The browser does not allow the camera on this address. Open the page from its https:// address.";
+  }
+  const n = e && e.name;
+  if (n && CAM_ERRORS[n]) return CAM_ERRORS[n];
+  return "Camera not available" + (e && e.message ? " (" + (n || "error") + "): " + e.message : ".");
+}
+
+function camFail(message, err) {
+  setCamStatus("Camera not started", "err");
+  $("camDiag").textContent = message;
+  const detail = err ? "  Error: " + (err.name || "unknown") + (err.message ? " - " + err.message : "") : "";
+  $("camInfo").textContent = camDiagnostics() + detail;
+  setMsg(message, true);
+}
+
+function attachStream() {
+  if (!camStream) return;
+  [camVideo, camPreview].forEach(v => {
+    if (v.srcObject !== camStream) v.srcObject = camStream;
+    v.muted = true;
+    v.play().catch(() => {});
+  });
+}
+
+function videoSource() {
+  if (!camStream) return null;
+  if (camPreview.readyState >= 2 && camPreview.videoWidth) return camPreview;
+  if (camVideo.readyState >= 2 && camVideo.videoWidth) return camVideo;
+  return null;
+}
+
+function showCameraOn() {
+  const track = camStream && camStream.getVideoTracks()[0];
+  const fm = track && track.getSettings ? track.getSettings().facingMode : "";
+  const name = fm === "environment" ? "Back camera" : fm === "user" ? "Front camera" : "Camera";
+  setCamStatus(name + " is on", "ok");
+  $("camDiag").textContent = "";
+  camPreview.classList.add("on");
+  attachStream();
+  $("btnCamOff").hidden = false;
+}
+
+function getCameraWithTimeout(constraints, ms) {
+  let timedOut = false;
+  const request = navigator.mediaDevices.getUserMedia(constraints);
+  request.then(stream => {
+    if (timedOut) stream.getTracks().forEach(t => t.stop());
+  }).catch(() => {});
+  return Promise.race([
+    request,
+    new Promise((_, reject) => setTimeout(() => {
+      timedOut = true;
+      reject({ name: "TimeoutError", message: "no camera prompt" });
+    }, ms))
+  ]);
+}
+
+async function openCamera() {
+  if (camStream) { showCameraOn(); return true; }
+
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    camFail(cameraProblem(null), null);
+    return false;
+  }
+
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const p = await navigator.permissions.query({ name: "camera" });
+      if (p.state === "denied") {
+        camFail("Camera is blocked for this site. Open the padlock next to the address, set Camera to Allow, reload the page, then press Allow camera.", null);
+        return false;
+      }
+    }
+  } catch (e) { /* this browser does not report the permission; just ask */ }
+
+  setCamStatus("Asking for camera permission. Tap Allow if the browser asks.", "wait");
+  $("camDiag").textContent = "";
+
+  const attempts = [
+    { video: { facingMode: { ideal: facing } }, audio: false },
+    { video: true, audio: false }
+  ];
+  let lastErr = null;
+  for (const c of attempts) {
+    try {
+      camStream = await getCameraWithTimeout(c, 15000);
+      break;
+    } catch (e) {
+      lastErr = e;
+      if (["NotAllowedError", "PermissionDeniedError", "SecurityError", "NotFoundError",
+           "DevicesNotFoundError", "NotReadableError", "TrackStartError", "TimeoutError"].includes(e.name)) break;
+    }
+  }
+
+  if (!camStream) {
+    camFail(cameraProblem(lastErr), lastErr);
+    return false;
+  }
+
+  camStream.getVideoTracks().forEach(t => t.addEventListener("ended", () => {
+    camStream = null;
+    camVideo.srcObject = null;
+    camPreview.srcObject = null;
+    camPreview.classList.remove("on");
+    $("btnCamOff").hidden = true;
+    setCamStatus("Camera stopped. Press Allow camera again.", "err");
+  }));
+
+  showCameraOn();
+  setMsg("");
+  $("camInfo").textContent = "";
+  return true;
+}
+
+function releaseCamera() {
+  stopPushing();
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  camStream = null;
+  camVideo.srcObject = null;
+  camPreview.srcObject = null;
+  camPreview.classList.remove("on");
+  $("btnCamOff").hidden = true;
+  $("camDiag").textContent = "";
+  setCamStatus("Camera is off", "");
+}
+
+function chooseCamera(f) {
+  if (running) return setMsg("Stop detection before changing the camera.", true);
+  setFacing(f);
+  releaseCamera();
+  $("src").value = "device";
+  pts = []; zone = []; zoneDone = false;
+  view.hidden = true;
+  overlay.hidden = true;
+  $("setupEmpty").hidden = false;
+  drawOverlay(); updateReadouts();
+  setMsg((f === "user" ? "Front" : "Back") + " camera selected. Press Allow camera, then Load preview.");
+}
+$("btnBack").onclick = () => chooseCamera("environment");
+$("btnFront").onclick = () => chooseCamera("user");
+$("btnAllow").onclick = () => openCamera();
+$("btnCamOff").onclick = () => releaseCamera();
+
+function frameCanvas(maxW) {
+  const v = videoSource();
+  if (!v) return null;
+  const w0 = v.videoWidth, h0 = v.videoHeight;
+  const k = Math.min(1, maxW / w0);
+  const c = document.createElement("canvas");
+  c.width = Math.round(w0 * k); c.height = Math.round(h0 * k);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  return c;
+}
+
+function canvasBlob(c, quality) {
+  return new Promise(r => c.toBlob(r, "image/jpeg", quality));
+}
+
+async function previewDevice() {
+  setMsg("Starting the camera...");
+  if (!(await openCamera())) return false;
+  attachStream();
+
+  setMsg("Waiting for the camera picture...");
+  let v = null;
+  for (let i = 0; i < 60 && !v; i++) {
+    await sleep(100);
+    v = videoSource();
+  }
+  if (!v) {
+    setMsg("The camera is on but no picture arrived. Press Turn off, then Allow camera again.", true);
+    return false;
+  }
+
+  const c = frameCanvas(1280);
+  const blob = c ? await canvasBlob(c, 0.9) : null;
+  if (!blob) { setMsg("The camera picture could not be captured. Try again.", true); return false; }
+
+  try {
+    const res = await fetch(srvUrl("/api/preview_frame"), {
+      method: "POST", headers: { "Content-Type": "image/jpeg" }, body: blob
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      setMsg(d.error || "Could not load the preview.", true);
+      return false;
+    }
+  } catch (e) {
+    setMsg("Cannot reach the server at " + srv() + ". Save the server address and check that survilience.py is running.", true);
+    return false;
+  }
+  return true;
+}
+
+let pushing = false, pushId = 0;
+
+async function pushLoop(id) {
+  while (pushing && id === pushId) {
+    const t0 = performance.now();
+    const c = frameCanvas(512);
+    if (c) {
+      const fid = ++frameSeq;
+      FRAME_BUF.push({ id: fid, canvas: c });
+      if (FRAME_BUF.length > FRAME_KEEP) FRAME_BUF.shift();
+      const blob = await canvasBlob(c, 0.6);
+      if (blob) {
+        try {
+          await fetch(srvUrl("/api/frame"), {
+            method: "POST",
+            headers: { "Content-Type": "image/jpeg", "X-Frame-Id": String(fid) },
+            body: blob
+          });
+        } catch (e) {
+          await sleep(300);
+        }
+      }
+    }
+    const wait = 66 - (performance.now() - t0);
+    if (wait > 0) await sleep(wait);
+  }
+}
+
+function startPushing() {
+  if (pushing) return;
+  pushing = true;
+  pushLoop(++pushId);
+}
+
+function stopPushing() {
+  pushing = false;
+}
+
+/* ============ SOURCE, PREVIEW AND START ============ */
+function resolveSource() {
+  let s = $("src").value.trim();
+  if (!s && camStream) {
+    s = "device";
+    $("src").value = "device";
+  }
+  return s;
+}
+
+$("btnFile").onclick = () => $("file").click();
+$("file").onchange = async () => {
+  const f = $("file").files[0];
+  if (!f) return;
+  setMsg("Uploading video...");
+  try {
+    const fd = new FormData();
+    fd.append("file", f);
+    const res = await fetch(srvUrl("/api/upload"), { method: "POST", body: fd });
+    const data = await res.json();
+    if (data.ok) { $("src").value = data.source; setMsg("Video uploaded. Choose Load preview."); }
+    else setMsg(data.error || "Upload failed.", true);
+  } catch (e) {
+    setMsg("Upload failed. Check the server address and that survilience.py is running.", true);
+  }
+};
+
+$("btnLoad").onclick = async () => {
+  const source = resolveSource();
+  if (!source) return setMsg("Press Allow camera first, or enter a source.", true);
+
+  if (source === "device") {
+    if (!(await previewDevice())) return;
+  } else {
+    setMsg("Opening source...");
+    const r = await api("/api/preview", { source });
+    if (!r.ok) return setMsg(r.data.error || "Could not load the preview.", true);
+  }
+
+  pts = [];
+  zone = [];
+  zoneDone = false;
+  view.src = srvUrl("/api/preview.jpg") + "?t=" + Date.now();
+  view.hidden = false;
+  $("setupEmpty").hidden = true;
+  overlay.hidden = false;
+  setMsg("Preview loaded. Click two points to draw the border line on the picture.");
+  updateReadouts();
+};
+
+$("btnStart").onclick = async () => {
+  if (pts.length !== 2) return setMsg("Draw the border first: click two points on the picture.", true);
+  if (zone.length > 0 && zone.length < 3) return setMsg("A zone needs at least 3 corners.", true);
+  if (zone.length >= 3 && !zoneDone) return setMsg("Press Finish zone before starting.", true);
+
+  const source = resolveSource();
+  if (!source) return setMsg("Press Allow camera first, or enter a source.", true);
+
+  const classes = [...document.querySelectorAll("#classes input:checked")].map(c => c.value);
+  if (!classes.length) return setMsg("Pick at least one thing to detect.", true);
+
+  if (source === "device" && !(await openCamera())) {
+    return setMsg("The camera is off. Press Allow camera first.", true);
+  }
+
+  const useZone = zone.length >= 3 ? zone : null;
+  const r = await api("/api/start", { source, line: pts, zone: useZone, classes });
+  if (!r.ok) return setMsg(r.data.error || "Could not start detection.", true);
+
+  liveOv = { fid: null, line: pts.map(p => [p[0], p[1]]),
+             zone: useZone ? useZone.map(p => [p[0], p[1]]) : [], state: "anchor", boxes: [] };
+  lastT = null;
+  lastOvChange = performance.now();
+
+  setMsg("");
+  lastSig = "";
+  if (source === "device") startPushing();
+  location.hash = "live";
+  poll();
+};
+
+/* ============ LIVE TAB ============ */
+$("btnCam").onclick = async () => {
+  if (await openCamera()) {
+    $("btnCam").hidden = true;
+    startPushing();
+  }
+};
+
+$("btnStop").onclick = async () => {
+  releaseCamera();
+  await api("/api/stop");
+};
+
+$("btnChange").onclick = async () => {
+  releaseCamera();
+  await api("/api/stop");
+  location.hash = "setup";
+  setMsg("Choose Back or Front camera, press Allow camera, Load preview, then Start detection.");
+};
+
+/* ============ CROSSING LOG TAB ============ */
+function fmtTime(t) {
+  const d = new Date(t);
+  return isNaN(d) ? t : d.toLocaleString([], {
+    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+async function loadLog() {
+  try {
+    const rows = await (await fetch(srvUrl("/api/history"))).json();
+    $("logCount").textContent = rows.length + (rows.length === 1 ? " crossing" : " crossings") + " logged";
+    $("rows").innerHTML = rows.length
+      ? rows.map(r => {
+          const who = cap(r.class) + " " + r.id;
+          const pic = r.image
+            ? `<a href="${esc(srvUrl(r.image))}" target="_blank" rel="noopener"><img src="${esc(srvUrl(r.image))}" alt="Snapshot of ${esc(who)}" loading="lazy"></a>`
+            : `<span class="hint">Picture missing</span>`;
+          return `<tr>
+            <td class="pic">${pic}</td>
+            <td><b>${esc(who)}</b></td>
+            <td>${esc(fmtTime(r.time))}</td>
+            <td>${esc(r.direction)}</td>
+          </tr>`;
+        }).join("")
+      : `<tr><td colspan="4" class="hint">No crossings logged yet. Start detection on the setup tab.</td></tr>`;
+  } catch (e) {
+    $("logCount").textContent = "Could not load the log. Check the server address and that survilience.py is running.";
+  }
+}
+$("btnRefresh").onclick = loadLog;
+
+/* ============ LIVE PICTURE ============ */
+function setLiveMode(m) {
+  if (m === liveMode) return;
+  liveMode = m;
+  $("devView").hidden = m !== "dev";
+  feed.hidden = m !== "mjpeg";
+  $("liveEmpty").hidden = m !== "none";
+  if (m === "mjpeg") feed.src = srvUrl("/video_feed") + "?t=" + Date.now();
+  else feed.removeAttribute("src");
+  if (m === "none") {
+    liveOv = null;
+    $("overlayInfo").textContent = "";
+  }
+}
+
+async function pollOverlay() {
+  try {
+    const data = await (await fetch(srvUrl("/api/overlay"))).json();
+    if (data && (data.line !== undefined || data.state)) {
+      liveOv = data;
+      if (data.t !== lastT) { lastT = data.t; lastOvChange = performance.now(); }
+    }
+  } catch (e) { /* try again */ }
+  updateOverlayInfo();
+  setTimeout(pollOverlay, 80);
+}
+
+function updateOverlayInfo() {
+  const el = $("overlayInfo");
+  if (liveMode !== "dev") { el.textContent = ""; return; }
+  if (!liveOv) { el.textContent = "Border: waiting for the first detection..."; return; }
+  const fresh = performance.now() - lastOvChange < 1500;
+  if (!fresh) { el.textContent = "Border: waiting for new pictures from the camera..."; return; }
+  const names = {
+    anchor: "locked to the drawn place",
+    tracking: "following the scene",
+    holding: "holding its position for a moment",
+    searching: "out of view. It returns when the camera sees the drawn scene again.",
+    fixed: "fixed (not enough detail to track)"
+  };
+  el.textContent = "Border: " + (names[liveOv.state] || "waiting");
+}
+
+function findFrame(fid) {
+  for (let i = FRAME_BUF.length - 1; i >= 0; i--) {
+    if (FRAME_BUF[i].id === fid) return FRAME_BUF[i].canvas;
+  }
+  return null;
+}
+
+function drawLive() {
+  requestAnimationFrame(drawLive);
+  if (liveMode !== "dev") return;
+  const dv = $("devView"), c = $("liveDisp");
+  const W = dv.clientWidth;
+  if (!W) return;
+
+  const ov = liveOv;
+  let src = ov && ov.fid != null ? findFrame(ov.fid) : null;
+  const matched = !!src;
+  if (!src && FRAME_BUF.length) src = FRAME_BUF[FRAME_BUF.length - 1].canvas;
+  if (!src) return;
+
+  const H = Math.round(W * src.height / src.width);
+  if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+  const g = c.getContext("2d");
+  g.drawImage(src, 0, 0, W, H);
+  if (!ov) return;
+
+  if (ov.fid != null && !matched) return;
+
+  if (ov.zone && ov.zone.length >= 3) {
+    g.beginPath();
+    ov.zone.forEach(([x, y], i) => (i ? g.lineTo(x * W, y * H) : g.moveTo(x * W, y * H)));
+    g.closePath();
+    g.fillStyle = "rgba(229,72,28,.2)"; g.fill();
+    g.strokeStyle = "#E5481C"; g.lineWidth = 2; g.stroke();
+  }
+
+  g.font = "bold 12px Archivo, Arial, sans-serif";
+  (ov.boxes || []).forEach(b => {
+    const [x1, y1, x2, y2] = b.box;
+    g.strokeStyle = b.alert ? "#D63A2F" : "#DDE6EA";
+    g.lineWidth = 2;
+    g.strokeRect(x1 * W, y1 * H, (x2 - x1) * W, (y2 - y1) * H);
+    if (b.alert) {
+      g.fillStyle = "#D63A2F";
+      g.fillText("ALERT: " + b.label + " " + b.tid, x1 * W, Math.max(y1 * H - 6, 12));
+    }
+  });
+
+  if (ov.line && ov.line.length === 2) {
+    strokeLine(g, ov.line[0][0] * W, ov.line[0][1] * H, ov.line[1][0] * W, ov.line[1][1] * H, 3);
+  } else if (ov.state === "searching") {
+    g.fillStyle = LINE_COLOR;
+    g.font = "bold 13px Archivo, Arial, sans-serif";
+    g.fillText("Border out of view: turn the camera back to the drawn view", 10, H - 12);
+  }
+}
+
+/* ============ STATUS AND CROSSINGS ============ */
+async function poll() {
+  let s;
+  try { s = await getStatus(); }
+  catch (e) {
+    setPill("Server not reachable", "err");
+    return;
+  }
+
+  running = s.running;
+  setPill(s.status, s.status === "Error" ? "err" : running ? "run" : "idle");
+  $("cross").textContent = s.crossings;
+  $("btnStop").disabled = !running;
+  $("btnStart").disabled = running;
+  $("btnAllow").disabled = running;
+  $("btnCamOff").disabled = running;
+
+  if (s.error && s.error !== lastError) {
+    lastError = s.error;
+    $("notice").textContent = s.error;
+    $("notice").hidden = false;
+    setMsg(s.error, true);
+  }
+  if (!s.error) { lastError = ""; $("notice").hidden = true; }
+
+  setLiveMode(!running ? "none" : s.device ? "dev" : "mjpeg");
+
+  const deviceRunning = running && s.device;
+  $("btnCam").hidden = !(deviceRunning && !camStream);
+  $("btnChange").hidden = !deviceRunning;
+  if (deviceRunning && camStream) startPushing();
+  else stopPushing();
+
+  if (wasRunning && !running) releaseCamera();
+  wasRunning = running;
+}
+
+async function pollEvents() {
+  try {
+    const list = await (await fetch(srvUrl("/api/alerts"))).json();
+    const sig = JSON.stringify(list);
+    if (sig === lastSig) return;
+    lastSig = sig;
+    $("events").innerHTML = list.length
+      ? list.map(a => `<li><b>${esc(cap(a.class))} ${esc(a.id)}</b>
+          <span>${esc(a.time.split("T")[1] || a.time)}</span>
+          <span>${esc(cap(a.direction))}</span></li>`).join("")
+      : `<li class="none">No crossings yet.</li>`;
+  } catch (e) { /* try again next time */ }
+}
+
+/* ============ START ============ */
+$("srvInput").value = srv();
+$("galleryLink").href = srvUrl("/gallery");
+$("csvLink").href = srvUrl("/api/log.csv");
+setFacing(facing);
+setCamStatus("Camera is off", "");
+$("camInfo").textContent = camDiagnostics();
+testServer();
+setInterval(poll, 700);
+setInterval(pollEvents, 1500);
+setInterval(() => { if (current === "log") loadLog(); }, 5000);
+
+showTab(location.hash.slice(1) || "setup");
+poll();
+pollEvents();
+pollOverlay();
+requestAnimationFrame(drawLive);
+updateReadouts();
+</script>
+</body>
+</html>
